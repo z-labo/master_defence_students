@@ -374,7 +374,7 @@
 
             const csv = buildDetailCsvFromRawVotes(rawVotes);
             const ts = new Date().toISOString().replace(/[:.]/g, "-");
-            downloadTextAsFile(csv, `detail_results_${ts}.csv`);
+            downloadTextAsFile(csv, `student_results_${ts}.csv`);
 
             statusDiv.textContent = "CSVを生成しました。";
             statusDiv.className = "status ok";
