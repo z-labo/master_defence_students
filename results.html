@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>オンライン審査 集計結果</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f7;
+      color: #222;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 24px auto 40px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+      padding: 20px 24px 28px;
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 1rem;
+    }
+    .info-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 12px;
+    }
+    .btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: none;
+      background: #325dff;
+      color: #fff;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td {
+      background: #fafafa;
+    }
+    .small {
+      font-size: 0.8rem;
+      color: #777;
+    }
+    .status {
+      font-size: 0.8rem;
+      color: #555;
+    }
+    .status.error {
+      color: #c53030;
+    }
+    .status.ok {
+      color: #047857;
+    }
+
+   /*
+    .details {
+      margin-top: 16px;
+      font-size: 0.85rem;
+    }
+    
+    .details pre {
+      white-space: pre-wrap;
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 8px;
+      font-family: "JetBrains Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
+    }
+
+    */
+    
+    @media (max-width: 640px) {
+      th, td { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>令和7年度 宇都宮大学大学院 光工学プログラム 修士論文発表会 集計結果（教員）</h1>
+
+    <div class="subtitle">
+      Dropbox フォルダ <code>/vote_results</code> に保存された JSON を元に、参加者ごとの平均点・票数をリアルタイムで集計表示します。
+    </div>
+
+    <div class="info-bar">
+      <div>
+        <span id="last-updated">最終更新: -</span>
+        <span id="record-count" style="margin-left:8px;">(発表者数: -)</span>
+      </div>
+
+      <div>
+        <button class="btn" id="refresh-btn">再読み込み</button>
+        <span class="small" style="margin-left:6px;">※ 必要に応じて手動で更新してください。</span>
+      </div>  
+
+      <div>
+        <button class="btn" id="download-detail-btn">詳細結果をダウンロード</button>
+      </div>  
+    </div>
+    
+
+    <div id="status" class="status"></div>
+
+    <table id="result-table">
+      <thead>
+        <tr>
+          <th style="width: 8%;">順位</th>
+          <th style="width: 15%;">発表者番号</th>
+          <th style="width: 15%;">発表者名</th>
+          <th style="width: 15%;">平均点</th>
+          <th style="width: 15%;">票数</th>
+          <th style="width: 15%;">合計点</th>
+          <!-- <th>詳細</th> -->
+        </tr>
+      </thead>
+      <tbody>
+        <!-- JSで埋め込み -->
+      </tbody>
+    </table>
+  
+    <!--
+    <div class="details">
+      <div class="small">
+        ※ 「詳細」列には、各参加者に対してどの審査委員が何点を付けたか（コメント含む）を簡易的に表示します。  
+        より詳細な分析が必要な場合は、元の JSON ファイルをダウンロードしてスクリプト等で処理してください。
+      </div>
+    </div>
+    -->
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const API_URL = "https://master-s-thesis-presentation-session.onrender.com/api/results";
+
+      const lastUpdatedSpan = document.getElementById('last-updated');
+      const recordCountSpan = document.getElementById('record-count');
+      const statusDiv = document.getElementById('status');
+      const tableBody = document.querySelector('#result-table tbody');
+      const refreshBtn = document.getElementById('refresh-btn');
+      const downloadBtn = document.getElementById('download-detail-btn');
+      let latestData = null;
+
+
+      async function fetchResults() {
+        if (!statusDiv || !refreshBtn) return; // 최소 방어
+        statusDiv.textContent = "サーバーから集計データを取得中です...";
+        statusDiv.className = "status";
+        refreshBtn.disabled = true;
+
+        try {
+          const res = await fetch(API_URL + "?raw=1&raw=true", { cache: "no-store" });
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error("HTTP " + res.status + " " + text);
+          }
+          const data = await res.json();
+          if (!data.ok) {
+            throw new Error("API error: " + (data.error || "unknown"));
+          }
+          latestData = data;
+          renderResults(data);
+          statusDiv.textContent = "更新完了";
+          statusDiv.className = "status ok";
+        } catch (err) {
+          console.error(err);
+          statusDiv.textContent = "集計データの取得中にエラーが発生しました。 (" + err.message + ")";
+          statusDiv.className = "status error";
+        } finally {
+          refreshBtn.disabled = false;
+        }
+      }
+
+      async function fetchRawVotes() {
+        const res = await fetch(API_URL + "?raw=1", { cache: "no-store" });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error("HTTP " + res.status + " " + text);
+        }
+        const data = await res.json();
+        if (!data.ok) throw new Error("API error: " + (data.error || "unknown"));
+        console.log("raw endpoint keys:", Object.keys(data), "rawVotes length:", (data.rawVotes || []).length);
+
+        return data.rawVotes || data.raw_votes || data.records || data.votes || [];
+
+      }
+
+      function renderResults(data) {
+        const all_presenters = Array.isArray(data.all_presenters) ? data.all_presenters : [];
+        const lastUpdated = data.lastUpdated || "-";
+        const totalEvaluators = data.totalEvaluators || 0;
+
+        lastUpdatedSpan.textContent = "最終更新: " + lastUpdated;
+        recordCountSpan.textContent = "(発表者数: " + all_presenters.length + " / 審査委員数: " + totalEvaluators + ")";
+
+        tableBody.innerHTML = "";
+
+        all_presenters.forEach((p, idx) => {
+          const tr = document.createElement('tr');
+
+          const rankTd = document.createElement('td');
+          rankTd.textContent = idx + 1;
+          tr.appendChild(rankTd);
+
+          const idTd = document.createElement('td');
+          idTd.textContent = p.presenterId;
+          tr.appendChild(idTd);
+
+          const nameTd = document.createElement('td');
+          nameTd.textContent = p.presenter || "-";
+          tr.appendChild(nameTd);
+
+          const avgTd = document.createElement('td');
+          avgTd.textContent = Number(p.avgScore ?? 0).toFixed(3);
+          tr.appendChild(avgTd);
+
+          const cntTd = document.createElement('td');
+          cntTd.textContent = p.voteCount + " / " + totalEvaluators; 
+          tr.appendChild(cntTd);
+
+          const totalTd = document.createElement('td');
+          totalTd.textContent = Number(p.totalScore ?? 0).toFixed(3);
+          tr.appendChild(totalTd);
+          
+          
+          const detailTd = document.createElement('td');
+          const details = p.details || [];
+          if (details.length === 0) {
+            detailTd.textContent = "-";
+          } else {
+            const lines = details.map(d => {
+              const j = d.judgeId || "-";
+              const s = (d.score != null) ? d.score.toString() : "-";
+              const c = d.comment ? d.comment : "";
+              return `${j}: ${s}点 ${c}`;
+            });
+            detailTd.textContent = lines.join(" / ");
+          }
+          /* tr.appendChild(detailTd); */
+          
+         
+          tableBody.appendChild(tr);
+        });
+      }
+
+      function csvEscape(v) { 
+        const s = (v == null) ? "" : String(v);
+        return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }
+
+      function buildDetailCsvFromRawVotes(rawVotes) {
+        const votes = Array.isArray(rawVotes) ? rawVotes : [];
+
+        // evaluator 컬럼(표시 문자열): evaluatorName 사용
+        const evaluators = votes
+          .map(v => (v?.evaluatorName != null) ? String(v.evaluatorName) : "")
+          .filter(Boolean)
+          .sort();
+
+        // presenter 목록 수집 (presenterId -> presenterName)
+        const presenterMap = new Map();
+        for (const v of votes) {
+          const results = Array.isArray(v?.results) ? v.results : [];
+          for (const r of results) {
+            const pid = (r?.presenterId != null) ? String(r.presenterId) : "";
+            if (!pid) continue;
+            const pname = (r?.presenter != null) ? String(r.presenter) : "";
+            if (!presenterMap.has(pid)) presenterMap.set(pid, pname);
+          }
+        }
+
+        const presenterIds = Array.from(presenterMap.keys()).sort((a, b) => Number(a) - Number(b));
+
+        // matrix: presenterId -> (evaluatorName -> score)
+        const matrix = new Map();
+        for (const pid of presenterIds) matrix.set(pid, new Map());
+
+        for (const v of votes) {
+          const ev = (v?.evaluatorName != null) ? String(v.evaluatorName) : "";
+          if (!ev) continue;
+
+          const results = Array.isArray(v?.results) ? v.results : [];
+          for (const r of results) {
+            const pid = (r?.presenterId != null) ? String(r.presenterId) : "";
+            if (!pid || !matrix.has(pid)) continue;
+
+            const sc = r?.score;
+            if (typeof sc === "number" && Number.isFinite(sc)) {
+              matrix.get(pid).set(ev, sc);
+            }
+            // 없으면 빈칸 유지
+          }
+        }
+
+        const header = ["presenterId", "presenterName", ...evaluators];
+        const rows = [header];
+
+        for (const pid of presenterIds) {
+          const pname = presenterMap.get(pid) || "";
+          const row = [pid, pname];
+          const rowMap = matrix.get(pid);
+
+          for (const ev of evaluators) {
+            row.push(rowMap?.has(ev) ? String(rowMap.get(ev)) : "");
+          }
+          rows.push(row);
+        }
+
+        return rows.map(r => r.map(csvEscape).join(",")).join("\r\n");
+      }
+
+      function downloadTextAsFile(text, filename, mime = "text/csv;charset=utf-8") {
+        const bom = "\uFEFF"; // Excel용 UTF-8 BOM
+        const blob = new Blob([bom + text], { type: mime });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(url);
+      }
+
+
+      if (downloadBtn) {
+        downloadBtn.addEventListener("click", async () => {
+          try {
+            statusDiv.textContent = "詳細データを取得中です...";
+            statusDiv.className = "status";
+            downloadBtn.disabled = true;
+
+            const rawVotes = await fetchRawVotes();
+            if (!Array.isArray(rawVotes) || rawVotes.length === 0) {
+              alert("詳細データ(rawVotes)がありません。");
+              return;
+            }
+
+            const csv = buildDetailCsvFromRawVotes(rawVotes);
+            const ts = new Date().toISOString().replace(/[:.]/g, "-");
+            downloadTextAsFile(csv, `detail_results_${ts}.csv`);
+
+            statusDiv.textContent = "CSVを生成しました。";
+            statusDiv.className = "status ok";
+          } catch (err) {
+            console.error(err);
+            statusDiv.textContent = "詳細データ取得/CSV生成でエラー: " + err.message;
+            statusDiv.className = "status error";
+          } finally {
+            downloadBtn.disabled = false;
+          }
+        });
+      }
+
+      
+      fetchResults();
+      if (refreshBtn) refreshBtn.addEventListener('click', fetchResults);
+    });
+  </script>
+</body>
+</html>

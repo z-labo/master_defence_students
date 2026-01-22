@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>修論発表 採点（0〜5）</title>
+
+  <style>
+  /* Base */
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background: #ffffff;
+    color: #000000;
+  }
+
+  /* Layout */
+  .wrap {
+    max-width: 1100px;
+    margin: 24px auto;
+    padding: 0 16px 40px;
+  }
+
+  .info-box {
+    background: #f0f4ff;
+    border-left: 4px solid #325dff;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    border-radius: 6px;
+  }
+
+  header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 8px;
+  }
+
+  /* Text */
+  h1 { font-size: 22px; margin: 0; }
+  .sub { font-size: 18px; color: #333333; margin-top: 8px; }
+  .small { font-size: 14px; color: #333333; }
+
+  /* Actions */
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  button {
+    background: none;
+    border: none;
+    color: #000000;
+    padding: 8px 0;
+    cursor: pointer;
+    font-size: 15px;
+    text-decoration: underline;
+  }
+  button:hover { opacity: 0.7; }
+
+  /* Date block */
+  .date-block { margin-top: 18px; }
+  .date-title { font-weight: 700; font-size: 18px; margin: 0 0 12px 0; }
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  @media (min-width: 860px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Card */
+  .card {
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: start;
+  }
+  .line1 {
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .tag { font-size: 14px; padding: 0; color: #333333; }
+  .presenter { color: #000000; }
+  .line2 { margin-top: 6px; font-size: 15px; color: #000000; line-height: 1.35; }
+
+  /* Inputs */
+  .scorebox {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    min-width: 92px;
+  }
+  label { font-size: 15px; color: #333333; }
+  select.score-select {
+    width: 100px;
+    padding: 6px 8px;
+    font-size: 15px;
+    border: 1px solid #000000;
+    background: #ffffff;
+    color: #000000;
+    outline: none;
+    cursor: pointer;
+  }
+  select.score-select:focus { outline: 1px solid #000000; }
+  select.score-select.missing { border-color: #e00000 !important; outline: 2px solid #e00000 !important; }
+
+  /* Stats */
+  .stats {
+    margin-top: 12px;
+    color: #333333;
+    font-size: 14px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .pill { padding: 0; }
+
+  /* Footer */
+  footer { margin-top: 20px; color: #333333; font-size: 13px; line-height: 1.55; }
+
+  /* Evaluator */
+  .evaluator-row {
+    margin-top: 10px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .evaluator-row label { margin-right: 8px; color: #333333; }
+  .evaluator-row input[type=text]{
+    width: 220px;
+    padding: 6px 8px;
+    font-size: 16px;
+    border: 1px solid #000000;
+    background: #ffffff;
+    color: #000000;
+    outline: none;
+  }
+  .evaluator-row input[type=text]:focus { outline: 1px solid #000000; }
+
+  /* Submit button (primary) */
+  .btn-submit-primary {
+    background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+    color: #ffffff !important;
+    padding: 10px 28px !important;
+    border-radius: 6px;
+    font-size: 16px !important;
+    font-weight: 700;
+    text-decoration: none !important;
+    box-shadow: 0 3px 8px rgba(211, 47, 47, 0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .btn-submit-primary:hover {
+    opacity: 1 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(211, 47, 47, 0.45);
+  }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>令和7年度 宇都宮大学大学院 光工学プログラム 修士論文発表会</h1>
+        <h1>採点システム（教員用）</h1>
+      </div>
+
+      <div class="actions">
+        <button id="btnExport">CSV出力</button>
+        <button id="btnClear">全スコアをクリア</button>
+      </div>
+    </header>
+
+    <div class="info-box">
+      • 各発表について、0〜5の整数で採点してください。採点が完了しましたら、必ず「提出」をお願いします。<br>
+      <span style="color: #e00000; font-weight: bold;">• 研究室のメンバーに対しては「評価しない」を選択してください。</span><br>
+      • 採点内容はブラウザのローカルストレージに自動保存されます（ブラウザを閉じて再度開いても記録は残ります）。<br>
+      • 同一の評価者による提出データは上書き保存されますので、複数回提出していただいても問題ありません。<br>
+      • 苗字と名前の間にスペースを入れないでください。<br>
+      • アップロードに失敗したらページを更新（F5）してから再度アップロードください。
+    </div>
+
+    <div class="evaluator-row">
+      <div>
+        <label for="evaluatorName">評価者氏名</label>
+        <input
+          id="evaluatorName"
+          type="text"
+          placeholder="例）宇都宮太郎"
+          autocomplete="name"
+        >
+      </div>
+      <button id="btnSubmit" class="btn-submit-primary">提出</button>
+    </div>
+
+    <div class="stats" id="stats"></div>
+    <div id="status" class="status"></div>
+
+    <main id="root"></main>
+
+    <footer>
+      <div class="small">© 2026 z-lab. All rights reserved.</div>
+    </footer>
+  </div>
+
+  <script>
+    const DATA = {"dates": ["2/2 (月)", "2/3 (火)", "2/4 (水)"], 
+    "items_by_date": {"2/2 (月)": [{
+      "date": "2/2 (月)", "time": "10:10", "no": 1, "presenter": "高久 隼太郎", "title": "加速長の長尺化による Sub-GeV 電子ビーム発生"}, {
+        "date": "2/2 (月)", "time": "10:30", "no": 2, "presenter": "塩澤 友紀", "title": "プラズマ密度不連続面における位相速度変化とプラズマ波破砕"}, {
+          "date": "2/2 (月)", "time": "10:50", "no": 3, "presenter": "白坂 幹人", "title": "超高強度レーザー励起プラズマ波の強制破砕とイオン化入射"}, {
+            "date": "2/2 (月)", "time": "11:10", "no": 4, "presenter": "坂本 千明", "title": "レーザー生成電離面とフーリエ電場との相互作用による電磁波発生"}, {
+              "date": "2/2 (月)", "time": "11:30", "no": 5, "presenter": "種倉 遥斗", "title": "プラズマ電離化率による光パルスのエネルギー分配"}, {
+                "date": "2/2 (月)", "time": "12:50", "no": 6, "presenter": "片岡 大樹", "title": "スペックル多重記録を利用したホログラフィック導光板の研究"}, {
+                  "date": "2/2 (月)", "time": "13:10", "no": 7, "presenter": "會澤 颯泰", "title": "機械学習を用いた高密度多重記録画像からの信号検出"}, {
+                    "date": "2/2 (月)", "time": "13:30", "no": 8, "presenter": "大塚 颯斗", "title": "ハルトマンマスクを用いたシングルショット位相検出"}, {
+                      "date": "2/2 (月)", "time": "14:00", "no": 9, "presenter": "佐藤 晴", "title": "陰影除去を目的とした等価光源分布の推定"}, {
+                        "date": "2/2 (月)", "time": "14:20", "no": 10, "presenter": "太田 朋代", "title": "他視点ステレオホログラフィックスクリーンの作製"}, {
+                          "date": "2/2 (月)", "time": "14:40", "no": 11, "presenter": "菊地 太陽", "title": "テーブル型体積ホログラフィックスクリーンの作製"}, {
+                            "date": "2/2 (月)", "time": "15:10", "no": 12, "presenter": "高橋 康一", "title": "レーザー励起発光を用いたホログラムの最適化"}, {
+                              "date": "2/2 (月)", "time": "15:30", "no": 13, "presenter": "村田 勇希", "title": "空気中でのレーザー生成現象の時間分解画像計測"}, {
+                                "date": "2/2 (月)", "time": "15:50", "no": 14, "presenter": "佐藤 悠真", "title": "リニアディジタルホログラフィ"}, {
+                                  "date": "2/2 (月)", "time": "16:10", "no": 15, "presenter": "山内 楓", "title": "光干渉系を用いたレーザー生成超音波の観測"}, {
+                                    "date": "2/2 (月)", "time": "16:30", "no": 16, "presenter": "飯泉 一馬", "title": "対向光学系におけるホログラフィックビーム成形"
+      }], 
+      "2/3 (火)": [{                               
+      "date": "2/3 (火)", "time": "09:30", "no": 17, "presenter": "箱田 隆人", "title": "カラー偏光カメラによる水中マイクロプラスチックの検出"}, {
+        "date": "2/3 (火)", "time": "09:50", "no": 18, "presenter": "名久井 晋", "title": "空間光位相変調器を用いたスナップショットミュラー行列イメージング"}, {
+          "date": "2/3 (火)", "time": "10:10", "no": 19, "presenter": "藤田 怜", "title": "タイムオブフライトカメラによる霧環境の3次元計測法"}, {
+            "date": "2/3 (火)", "time": "10:40", "no": 20, "presenter": "星野 智也", "title": "分光カメラを使用したパターン投影法による三次元計測"}, {
+              "date": "2/3 (火)", "time": "11:00", "no": 21, "presenter": "細川 登耶", "title": "自由形式を用いる屈折率分布レンズの光学設計"}, {
+                "date": "2/3 (火)", "time": "11:20", "no": 22, "presenter": "深谷 拓都", "title": "霧環境上での赤外線イメージング"}, {
+                  "date": "2/3 (火)", "time": "11:40", "no": 23, "presenter": "大久保 武", "title": "ビデオ中における色、偏光、及び分光状態の微小変化の拡大"}, {
+                    "date": "2/3 (火)", "time": "13:00", "no": 24, "presenter": "兼子 颯大郎", "title": "多感覚刺激を付与した空中インターフェースに関する研究"}, {
+                      "date": "2/3 (火)", "time": "13:20", "no": 25, "presenter": "渡邊 拓巳", "title": "再帰反射による空中結像の光学系を用いた錯視現象とその応用に関する研究"}, {
+                        "date": "2/3 (火)", "time": "13:40", "no": 26, "presenter": "玉野 賢祐", "title": "水中への３D映像の形成と奥行き知覚に関する研究"}, {
+                          "date": "2/3 (火)", "time": "14:00", "no": 27, "presenter": "西山 高瑠", "title": "視覚的補完を用いた再帰反射による空中結像光学系に関する研究"}, {
+                            "date": "2/3 (火)", "time": "14:20", "no": 28, "presenter": "市川 諒介", "title": "水中ディスプレイの光学設計と水生生物の行動実験への応用に関する研究"}, {
+                              "date": "2/3 (火)", "time": "14:40", "no": 29, "presenter": "田崎 大智", "title": "スクロールを利用した主観的超解像表示と空中ディスプレイへの応用に関する研究"}, {
+                                "date": "2/3 (火)", "time": "15:20", "no": 30, "presenter": "小山 希", "title": "シリコンフォトニクスパルス測定器の高感度化・高分解能化"}, {
+                                  "date": "2/3 (火)", "time": "15:40", "no": 31, "presenter": "渡邊 隼", "title": "レーザー発振機構に基づく成長開始条件付き自己形成導波路作製法の研究"}, {
+                                    "date": "2/3 (火)", "time": "16:00", "no": 32, "presenter": "小池 将平", "title": "空間光変調素子を用いたベクトルビームの生成"}, {
+                                      "date": "2/3 (火)", "time": "16:20", "no": 33, "presenter": "川崎 佳純", "title": "長焦点深度を有する成形ビームの生成"}, {
+                                        "date": "2/3 (火)", "time": "16:40", "no": 34, "presenter": "柴 瑞輝", "title": "波長2 μmでの自己形成光導波路作製および評価に関する研究"
+      }], 
+      "2/4 (水)": [{
+      "date": "2/4 (水)", "time": "09:00", "no": 35, "presenter": "富田 健司", "title": "VRコンテンツの視覚的表現に対応した集中線による注意誘導に関する研究"}, {
+        "date": "2/4 (水)", "time": "09:20", "no": 36, "presenter": "内山 櫻子", "title": "1人称と3人称視点の強みを併せ持つ”1+3”人称視点における重さ錯覚に関する研究"}, {
+          "date": "2/4 (水)", "time": "09:40", "no": 37, "presenter": "二宮 俊", "title": "ダーツ投擲時における視線情報の可視化による正確性への影響に関する研究"}, {
+            "date": "2/4 (水)", "time": "10:00", "no": 38, "presenter": "成田 和樹", "title": "複雑な操作タスクに有効な仮想把持に関する研究"}, {
+              "date": "2/4 (水)", "time": "10:20", "no": 39, "presenter": "富永 達也", "title": "仮想環境における身体接触中の空間遷移によるアバタの印象変化に関する研究"}, {
+                "date": "2/4 (水)", "time": "10:50", "no": 40, "presenter": "岡部 文登", "title": "非人型アバタへの身体所有感を高めるための身体化フェーズに関する研究"}, {
+                  "date": "2/4 (水)", "time": "11:10", "no": 41, "presenter": "堤 太平", "title": "VR環境における移動音源の認知支援のための音情報の可視化に関する研究"}, {
+                    "date": "2/4 (水)", "time": "11:30", "no": 42, "presenter": "青沼 樹", "title": "身体化感覚を維持するためのアバタ間における移行方法に関する研究"}, {
+                      "date": "2/4 (水)", "time": "11:50", "no": 43, "presenter": "冨岡 昂成", "title": "仮想空間における物体形状の印象による重量知覚への影響に関する研究"}, {
+                        "date": "2/4 (水)", "time": "13:10", "no": 44, "presenter": "吉岡 佳音", "title": "明視野顕微鏡法による無染色肝病理標本の疑似染色"}, {
+                          "date": "2/4 (水)", "time": "13:30", "no": 45, "presenter": "鈴木 佑奈", "title": "Polarization from Shape による反射成分の解析"}, {
+                            "date": "2/4 (水)", "time": "13:50", "no": 46, "presenter": "松井 銀盛", "title": "深層学習を用いたフォトニック結晶型波長フィルタの設計"}, {
+                              "date": "2/4 (水)", "time": "14:10", "no": 47, "presenter": "荒川 直輝", "title": "多次元情報を縮約する分光メタイメージング法"}, {
+                                "date": "2/4 (水)", "time": "14:30", "no": 48, "presenter": "諏訪 敦", "title": "hat型ランダムフィルタによる分光偏光デモザイク"
+      }]
+    }};
+
+    const STORAGE_KEY = 'thesis_scoring_numeric_0to5_v1';
+    const EVALUATOR_KEY = 'thesis_scoring_evaluator_v1';
+
+    function loadEvaluator() {
+      try { return localStorage.getItem(EVALUATOR_KEY) || ''; }
+      catch { return ''; }
+    }
+
+    function saveEvaluator(name) {
+      try { localStorage.setItem(EVALUATOR_KEY, String(name || '').trim()); }
+      catch {}
+    }
+
+    const evaluatorEl = document.getElementById('evaluatorName');
+
+    function loadScores() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return {};
+        const obj = JSON.parse(raw);
+        const base = (obj && typeof obj === 'object') ? obj : {};
+        const clean = normalizeScores(base);
+
+        if (JSON.stringify(clean) !== JSON.stringify(base)) { 
+          saveScores(clean);
+        }
+        return clean;
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function saveScores(scores) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(scores)); }
+      catch (_) {}
+    }
+
+    function keyFor(item) {
+      return `${item.no}`;
+    }
+
+    function clampInt0to5(x) {
+      const n = Number(x);
+      if (!Number.isFinite(n)) return null;
+      const i = Math.trunc(n);
+      if (i < 0 || i > 5) return null;
+      return i;
+    }
+
+    // 「評価しない」を示す特別な値
+    const NO_RATING = '-';
+
+    function normalizeScores(scores) {
+      const out = {};
+      if (!scores || typeof scores !== 'object') return out;
+
+      for (const [k, v] of Object.entries(scores)) {
+        // 「評価しない」の場合
+        if (v === NO_RATING) {
+          out[k] = NO_RATING;
+          continue;
+        }
+        const c = clampInt0to5(v);
+        if (c !== null) out[k] = c;
+      }
+      return out;
+    }
+
+    function updateStats(scores) {
+
+      const clean = normalizeScores(scores);
+      const allValues = Object.values(clean);
+
+      // 入力済み（「評価しない」含む）の件数
+      const filled = allValues.length;
+      // 「評価しない」を除いた数値のみのスコア
+      const numericValues = allValues.filter(v => typeof v === 'number');
+      // 「評価しない」の件数
+      const noRatingCount = allValues.filter(v => v === NO_RATING).length;
+
+      const allItemsCount = Object.values(DATA.items_by_date).reduce((acc, arr) => acc + arr.length, 0);
+      const sum = numericValues.reduce((a, b) => a + b, 0);
+      const avg = numericValues.length ? (sum / numericValues.length) : 0;
+
+      const stats = document.getElementById('stats');
+      stats.innerHTML = '';
+
+      const pill = (text) => {
+        const s = document.createElement('div');
+        s.className = 'pill';
+        s.textContent = text;
+        return s;
+      };
+
+      stats.appendChild(pill(`入力済み: ${filled}/${allItemsCount}`));
+      stats.appendChild(pill(`評価しない: ${noRatingCount}件`));
+      stats.appendChild(pill(`平均: ${numericValues.length ? avg.toFixed(2) : '—'}（${numericValues.length}件対象）`));
+    }
+
+    function render() {
+      const root = document.getElementById('root');
+      root.innerHTML = '';
+
+      let scores = loadScores();
+      scores = normalizeScores(scores);
+      saveScores(scores); // (선택) 로컬스토리지도 정리된 값으로 갱신
+
+      for (const date of DATA.dates) {
+        const block = document.createElement('section');
+        block.className = 'date-block';
+
+        const h = document.createElement('h2');
+        h.className = 'date-title';
+        h.textContent = date;
+        block.appendChild(h);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+
+        for (const item of DATA.items_by_date[date]) {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const left = document.createElement('div');
+
+          // 1st line: 発表番号 + 発表時間 + 発表者
+          const line1 = document.createElement('div');
+          line1.className = 'line1';
+
+          const tagNo = document.createElement('span');
+          tagNo.className = 'tag';
+          tagNo.textContent = `No.${item.no}`;
+
+          const tagTime = document.createElement('span');
+          tagTime.className = 'tag';
+          tagTime.textContent = item.time;
+
+          const pres = document.createElement('span');
+          pres.className = 'presenter';
+          pres.textContent = item.presenter;
+
+          line1.appendChild(tagNo);
+          line1.appendChild(tagTime);
+          line1.appendChild(pres);
+
+          // 2nd line: title
+          const line2 = document.createElement('div');
+          line2.className = 'line2';
+          line2.textContent = item.title;
+
+          left.appendChild(line1);
+          left.appendChild(line2);
+
+          const right = document.createElement('div');
+          right.className = 'scorebox';
+
+          const lab = document.createElement('label');
+          lab.textContent = 'Score';
+
+          const select = document.createElement('select');
+          select.className = 'score-select';
+
+          const k = keyFor(item);
+          select.dataset.key = k;
+
+          // 選択肢を作成
+          const options = [
+            { value: '', label: '—' },         // 未選択
+            { value: '-', label: '評価しない' }, // 評価しない
+            { value: '5', label: '5' },
+            { value: '4', label: '4' },
+            { value: '3', label: '3' },
+            { value: '2', label: '2' },
+            { value: '1', label: '1' },
+            { value: '0', label: '0' },
+          ];
+
+          for (const opt of options) {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.label;
+            select.appendChild(option);
+          }
+
+          // 既存のスコアをセット
+          if (scores[k] === NO_RATING) {
+            select.value = '-';
+          } else if (typeof scores[k] === 'number') {
+            select.value = String(scores[k]);
+          } else {
+            select.value = '';
+          }
+
+          select.addEventListener('change', () => {
+            const val = select.value;
+
+            select.classList.remove('missing');
+
+            if (val === '') {
+              // 未選択に戻した場合
+              delete scores[k];
+              saveScores(scores);
+              updateStats(scores);
+              return;
+            }
+
+            if (val === '-') {
+              // 「評価しない」を選択
+              scores[k] = NO_RATING;
+              saveScores(scores);
+              updateStats(scores);
+              return;
+            }
+
+            // 数値スコア
+            const v = clampInt0to5(val);
+            if (v !== null) {
+              scores[k] = v;
+              saveScores(scores);
+              updateStats(scores);
+            }
+          });
+
+          right.appendChild(lab);
+          right.appendChild(select);
+
+          card.appendChild(left);
+          card.appendChild(right);
+          grid.appendChild(card);
+        }
+
+        block.appendChild(grid);
+        root.appendChild(block);
+      }
+
+      updateStats(scores);
+    }
+
+    function exportCSV() {
+      const scores = normalizeScores(loadScores());
+
+      const rows = [];
+      rows.push(['date','time','no','presenter','title','score'].join(','));
+
+      for (const date of DATA.dates) {
+        for (const item of DATA.items_by_date[date]) {
+          const k = keyFor(item);
+          let score = '';
+          if (scores[k] === NO_RATING) {
+            score = '評価しない';
+          } else if (typeof scores[k] === 'number') {
+            score = scores[k];
+          }
+
+          const esc = (s) => {
+            const str = String(s ?? '');
+            if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+            return str;
+          };
+
+          rows.push([
+            esc(date),
+            esc(item.time),
+            esc(item.no),
+            esc(item.presenter),
+            esc(item.title),
+            esc(score)
+          ].join(','));
+        }
+      }
+
+      const csv = '\ufeff' + rows.join('\r\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'thesis_scores_0to5.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+
+    async function submitToDropbox() {
+      let evaluator = evaluatorEl ? evaluatorEl.value.trim() : '';
+
+      if (!evaluator) {
+        evaluator = prompt('評価者氏名を入力してください（姓と名の間にスペースは入れないでください）', '') || '';
+        if (evaluatorEl) evaluatorEl.value = evaluator; // 입력칸에 반영
+      }
+
+      saveEvaluator(evaluator);
+
+      if (!evaluator || !String(evaluator).trim()) {
+        alert('評価者氏名が未入力のため、提出できません。');
+        return;
+      }
+
+      if (/\s/.test(evaluator)) {
+        alert('姓と名の間にスペースを入れないでください。');
+        return;
+      }
+
+      const scores = normalizeScores(loadScores());
+
+      /*
+      const allItemsCount = Object.values(DATA.items_by_date).reduce((acc, arr) => acc + arr.length, 0);
+      const filled = Object.keys(scores).length;
+
+      if (filled !== allItemsCount) {
+        document.querySelectorAll('input[type=number].missing').forEach(el => el.classList.remove('missing'));
+
+        for (const date of DATA.dates) {
+          for (const item of DATA.items_by_date[date]) {
+            const kk = keyFor(item);
+            const val = scores[kk];
+            if (typeof val !== 'number') {
+              const el = document.querySelector(`input[type=number][data-key="${CSS.escape(kk)}"]`);
+              if (el) el.classList.add('missing');
+            }
+          }
+        }
+
+        alert(`未入力または間違った入力があります（${filled}/${allItemsCount}）。`);
+        return;
+      }
+      */
+
+      const entries = [];
+      for (const date of DATA.dates) {
+        for (const item of DATA.items_by_date[date]) {
+          const k = keyFor(item);
+          const score = scores[k];
+
+          /*const score = (typeof scores[k] === 'number') ? scores[k] : null;*/
+          if (typeof score !== 'number' || !Number.isFinite(score)) continue;
+
+          entries.push({
+            presenterId: String(item.no),
+            date,
+            time: item.time,
+            no: item.no,
+            presenter: item.presenter,
+            title: item.title,
+            score
+          });
+        }
+      }
+
+      const payload = {
+        evaluatorName: evaluator,
+        timestamp: new Date().toISOString(),
+        results: entries
+      };
+
+      const status = document.getElementById('status'); // 없으면 아래 두 줄을 지우고 alert로 대체
+      if (status) {
+        status.textContent = 'Sending to server...';
+        status.className = 'status';
+      }
+
+      try {
+        const res = await fetch('https://master-s-thesis-presentation-session.onrender.com/submit_vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error('HTTP ' + res.status + ' ' + text);
+        }
+
+        const data = await res.json();
+
+        if (status) {
+          status.textContent = 'Upload to Dropbox completed: ' + (data.path || '');
+          status.className = 'status success';
+        } else {
+          alert('送信に成功しました: ' + (data.path || ''));
+        }
+      } catch (err) {
+        console.error(err);
+        if (status) {
+          status.textContent = 'An error occurred while sending to the server / uploading to Dropbox. (Please contact the administrator.)';
+          status.className = 'status error';
+        } else {
+          alert('送信/アップロードに失敗しました。管理者に連絡してください。');
+        }
+      }
+    }
+
+    function clearScores() {
+      saveScores({});
+      render();
+    }
+
+    document.getElementById('btnExport').addEventListener('click', exportCSV);
+    document.getElementById('btnClear').addEventListener('click', clearScores);
+    document.getElementById('btnSubmit').addEventListener('click', submitToDropbox);
+
+    if (evaluatorEl) {
+      // 1) 페이지 로드 시 자동 복원
+      evaluatorEl.value = loadEvaluator();
+
+      // 2) 입력할 때마다 자동 저장
+      evaluatorEl.addEventListener('input', () => {
+        saveEvaluator(evaluatorEl.value);
+      });
+    }
+
+    render();
+  </script>
+</body>
+
+</html>

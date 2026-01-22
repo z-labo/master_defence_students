@@ -1,0 +1,4 @@
+flask
+dropbox
+gunicorn
+flask-cors
